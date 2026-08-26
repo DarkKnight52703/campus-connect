@@ -1,0 +1,10 @@
+node_modules
+.env
+dist
+*.log
+deploy_result.json
+creds.json
+neon_check.js
+deploy_check.js
+check_creds.js
+deploy.js
