@@ -1,159 +1,144 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import AdminSidebar from '../../components/AdminSidebar';
 import { getEvents, createEvent, deleteEvent } from '../../api';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import { toast } from 'react-hot-toast';
-import { Plus, Trash2, Calendar as CalendarIcon, Clock } from 'lucide-react';
 
-const AdminEvents = () => {
-  const navigate = useNavigate();
+export default function AdminEvents() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', date: '', time: '17:00' });
+  const [showForm, setShowForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ name: '', event_date: '', event_time: '17:00' });
 
-  const fetchEvents = async () => {
-    try {
-      const res = await getEvents();
-      setEvents(res.data);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    } finally {
-      setLoading(false);
-    }
+  const load = async () => {
+    try { const r = await getEvents(); setEvents(r.data); }
+    catch { toast.error('Failed to load events'); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  const handleCreate = async (e) => {
+  const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const create = async e => {
     e.preventDefault();
+    if (!form.name || !form.event_date) return toast.error('Fill in all fields');
+    setCreating(true);
     try {
-      // Map form fields to backend expected keys
-      await createEvent({
-        name: formData.name,
-        event_date: formData.date,
-        event_time: formData.time + ':00', // add seconds
-      });
-      toast.success('Event created! All registered users added as participants.');
-      setShowModal(false);
-      setFormData({ name: '', date: '', time: '17:00' });
-      fetchEvents();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create event');
-    }
+      await createEvent({ name: form.name, event_date: form.event_date, event_time: form.event_time });
+      toast.success('Event created!');
+      setShowForm(false);
+      setForm({ name: '', event_date: '', event_time: '17:00' });
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create event');
+    } finally { setCreating(false); }
   };
 
-  const handleDelete = async (e, id) => {
-    e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this event? This cannot be undone.')) {
-      try {
-        await deleteEvent(id);
-        toast.success('Event deleted');
-        fetchEvents();
-      } catch (error) {
-        toast.error('Failed to delete event');
-      }
-    }
+  const remove = async (id, name) => {
+    if (!window.confirm(`Delete "${name}"?`)) return;
+    try { await deleteEvent(id); toast.success('Deleted'); load(); }
+    catch { toast.error('Failed to delete'); }
+  };
+
+  const statusStyle = {
+    pending:  'bg-orange-100 text-orange-700',
+    shuffled: 'bg-blue-100 text-blue-700',
+    revealed: 'bg-green-100 text-green-700',
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+      <main className="flex-1 p-8">
+        <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Events</h1>
-            <button
-              onClick={() => setShowModal(true)}
-              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition flex items-center gap-2"
-            >
-              <Plus size={18} /> Create Event
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Events</h1>
+              <p className="text-gray-500 text-sm mt-1">Create and manage pairing events</p>
+            </div>
+            <button onClick={() => setShowForm(!showForm)}
+              className="bg-purple-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-purple-700 transition">
+              {showForm ? 'Cancel' : '+ New Event'}
             </button>
           </div>
 
+          {/* Create Event Form */}
+          {showForm && (
+            <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-6 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-4">Create New Event</h3>
+              <form onSubmit={create} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Event Name</label>
+                  <input name="name" value={form.name} onChange={handle} required
+                    placeholder="e.g. Week 1 Shuffle"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
+                  <input name="event_date" type="date" value={form.event_date} onChange={handle} required
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Time (reveal - 5 min)</label>
+                  <input name="event_time" type="time" value={form.event_time} onChange={handle}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div className="md:col-span-3 flex justify-end">
+                  <button type="submit" disabled={creating}
+                    className="bg-purple-600 text-white text-sm font-medium px-6 py-2.5 rounded-xl hover:bg-purple-700 transition disabled:opacity-60">
+                    {creating ? 'Creating...' : 'Create Event →'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Events List */}
           {loading ? (
-            <LoadingSpinner />
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+            </div>
+          ) : !events.length ? (
+            <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center text-gray-400 shadow-sm">
+              <div className="text-4xl mb-2">📅</div>
+              <p>No events yet. Click "+ New Event" to create one.</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event) => (
-                <div
-                  key={event.id}
-                  onClick={() => navigate(`/admin/events/${event.id}`)}
-                  className="bg-white rounded-xl shadow-sm p-6 cursor-pointer hover:shadow-md transition relative group border border-transparent hover:border-primary-200"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-bold text-gray-800 truncate pr-2">{event.name}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                      event.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      event.status === 'shuffled' ? 'bg-blue-100 text-blue-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {event.status.toUpperCase()}
+            <div className="space-y-3">
+              {events.map(ev => (
+                <div key={ev.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-2xl shrink-0">📅</div>
+                    <div>
+                      <p className="font-semibold text-gray-900">{ev.name}</p>
+                      <p className="text-gray-400 text-sm">
+                        {new Date(ev.event_date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                        {' · '}{ev.event_time?.slice(0, 5)}
+                        {' · '}{ev.participant_count || 0} participants
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusStyle[ev.status] || 'bg-gray-100 text-gray-600'}`}>
+                      {ev.status}
                     </span>
-                  </div>
-
-                  <div className="space-y-2 text-sm text-gray-600 mb-4">
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon size={16} />
-                      {new Date(event.event_date).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock size={16} />
-                      Reveals 5 min before {event.event_time?.slice(0, 5)}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
-                    <span className="text-sm text-gray-500">{event.participant_count || 0} participants</span>
-                    <button
-                      onClick={(e) => handleDelete(e, event.id)}
-                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
-                    >
-                      <Trash2 size={18} />
+                    <Link to={`/admin/events/${ev.id}`}
+                      className="text-sm text-purple-600 font-medium hover:underline">
+                      Manage →
+                    </Link>
+                    <button onClick={() => remove(ev.id, ev.name)}
+                      className="text-sm text-red-400 hover:text-red-600 transition">
+                      Delete
                     </button>
                   </div>
                 </div>
               ))}
-              {events.length === 0 && <p className="text-gray-500 col-span-full">No events yet. Create one!</p>}
             </div>
           )}
-        </main>
-      </div>
-
-      {/* Create Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-                <h2 className="text-xl font-bold mb-4">Create New Event</h2>
-                <form onSubmit={handleCreate} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
-                        <input type="text" required className="w-full px-3 py-2 border rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                            value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Valentine Special" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Event Date</label>
-                        <input type="date" required className="w-full px-3 py-2 border rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                            value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Reveal Time</label>
-                        <input type="time" required className="w-full px-3 py-2 border rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                            value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} />
-                    </div>
-                    <div className="flex justify-end gap-3 mt-6">
-                        <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                        <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Create</button>
-                    </div>
-                </form>
-            </div>
         </div>
-      )}
+      </main>
     </div>
   );
-};
-
-export default AdminEvents;
+}
