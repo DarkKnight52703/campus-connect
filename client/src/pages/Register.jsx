@@ -1,132 +1,101 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Eye, EyeOff } from 'lucide-react';
 import { registerUser } from '../api';
 
-const Register = () => {
+export default function Register() {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    instagram: '',
-    gender: 'male',
-    password: '',
-    confirmPassword: ''
-  });
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ name: '', phone: '', instagram: '', gender: 'male', password: '', confirm: '' });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const submit = async e => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      return toast.error("Passwords don't match!");
-    }
-    if (formData.password.length < 6) {
-      return toast.error("Password must be at least 6 characters.");
-    }
-    
+    if (form.password !== form.confirm) return toast.error("Passwords don't match");
+    if (form.password.length < 6) return toast.error("Password must be 6+ characters");
+    setLoading(true);
     try {
-      const dataToSubmit = { ...formData };
-      delete dataToSubmit.confirmPassword;
-      await registerUser(dataToSubmit);
-      toast.success('Registered successfully! Please login.');
+      const { confirm, ...data } = form;
+      await registerUser(data);
+      toast.success('Registered! Please login.');
       navigate('/login');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Registration failed');
-    }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Registration failed');
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Join Campus Connect 💜
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Full Name</label>
-              <div className="mt-1">
-                <input name="name" type="text" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" value={formData.name} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-              <div className="mt-1">
-                <input name="phone" type="tel" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" value={formData.phone} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Instagram ID</label>
-              <div className="mt-1">
-                <input name="instagram" type="text" placeholder="@username" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" value={formData.instagram} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Gender</label>
-              <div className="mt-2 flex space-x-6">
-                <label className="flex items-center">
-                  <input type="radio" name="gender" value="male" checked={formData.gender === 'male'} onChange={handleChange} className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" />
-                  <span className="ml-2 text-sm text-gray-700">Male</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="radio" name="gender" value="female" checked={formData.gender === 'female'} onChange={handleChange} className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" />
-                  <span className="ml-2 text-sm text-gray-700">Female</span>
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <div className="mt-1 relative">
-                <input name="password" type={showPassword ? "text" : "password"} required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" value={formData.password} onChange={handleChange} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500">
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-              <div className="mt-1">
-                <input name="confirmPassword" type="password" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" value={formData.confirmPassword} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div>
-              <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                Register
-              </button>
-            </div>
-          </form>
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Already have an account?</span>
-              </div>
-            </div>
-            <div className="mt-6 text-center">
-              <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">Login here</Link>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-10 px-4">
+      <div className="max-w-md mx-auto w-full">
+        <div className="text-center mb-8">
+          <Link to="/" className="text-purple-700 font-bold text-xl">Campus Connect 💜</Link>
+          <h2 className="text-2xl font-bold text-gray-900 mt-3">Create your account</h2>
+          <p className="text-gray-500 text-sm mt-1">Join and get matched every week</p>
         </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <form onSubmit={submit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input name="name" type="text" required value={form.name} onChange={handle}
+                placeholder="Your name"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <input name="phone" type="tel" required value={form.phone} onChange={handle}
+                placeholder="91XXXXXXXXXX (with country code for WhatsApp)"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Instagram <span className="text-gray-400 font-normal">(optional)</span></label>
+              <input name="instagram" type="text" value={form.instagram} onChange={handle}
+                placeholder="@username"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+              <div className="grid grid-cols-2 gap-3">
+                {['male', 'female'].map(g => (
+                  <label key={g} className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 cursor-pointer transition font-medium text-sm ${form.gender === g ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                    <input type="radio" name="gender" value={g} checked={form.gender === g} onChange={handle} className="sr-only" />
+                    <span>{g === 'male' ? '👦' : '👧'}</span>
+                    <span className="capitalize">{g}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input name="password" type="password" required value={form.password} onChange={handle}
+                placeholder="Min. 6 characters"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <input name="confirm" type="password" required value={form.confirm} onChange={handle}
+                placeholder="Repeat password"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+            </div>
+
+            <button type="submit" disabled={loading}
+              className="w-full bg-purple-700 text-white font-semibold py-3 rounded-xl hover:bg-purple-800 transition disabled:opacity-60 mt-2">
+              {loading ? 'Creating account...' : 'Join Campus Connect 🎲'}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-gray-500 mt-5">
+          Already have an account?{' '}
+          <Link to="/login" className="text-purple-700 font-medium hover:underline">Login here</Link>
+        </p>
       </div>
     </div>
   );
-};
-
-export default Register;
+}
