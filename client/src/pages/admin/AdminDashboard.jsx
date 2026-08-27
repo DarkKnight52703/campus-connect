@@ -5,10 +5,20 @@ import { getAdminStats } from '../../api';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    getAdminStats().then(r => setStats(r.data)).catch(() => {});
-  }, []);
+  const fetchStats = async () => {
+    setLoading(true); setError(false);
+    try {
+      const r = await getAdminStats();
+      setStats(r.data);
+    } catch {
+      setError(true);
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchStats(); }, []);
 
   const cards = [
     { label: 'Total Users', value: stats?.totalUsers ?? '—', icon: '👥', color: 'bg-blue-50 text-blue-700' },
