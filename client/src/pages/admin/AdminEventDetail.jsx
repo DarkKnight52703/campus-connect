@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import AdminSidebar from '../../components/AdminSidebar';
-import { getEventDetail, setSpecialPair, shuffleEvent, revealEvent } from '../../api';
+import { getEvent, setSpecialPair, shuffleEvent, revealEvent } from '../../api';
 
 export default function AdminEventDetail() {
   const { id } = useParams();
@@ -14,7 +14,7 @@ export default function AdminEventDetail() {
 
   const load = async () => {
     try {
-      const r = await getEventDetail(id);
+      const r = await getEvent(id);
       setEvent(r.data);
     } catch { toast.error('Failed to load event'); }
     finally { setLoading(false); }
