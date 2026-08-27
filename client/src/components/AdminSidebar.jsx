@@ -1,61 +1,45 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, LogOut } from 'lucide-react';
 import { useAdminAuth } from '../contexts/AuthContext';
 
-const AdminSidebar = () => {
+const navItems = [
+  { to: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
+  { to: '/admin/events',    label: 'Events',    icon: '📅' },
+  { to: '/admin/users',     label: 'Users',     icon: '👥' },
+];
+
+export default function AdminSidebar() {
   const { logout } = useAdminAuth();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/admin');
-  };
-
-  const navItems = [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Users', path: '/admin/users', icon: Users },
-    { name: 'Events', path: '/admin/events', icon: Calendar },
-  ];
+  const handleLogout = () => { logout(); navigate('/admin'); };
 
   return (
-    <div className="w-64 bg-gray-900 text-white flex flex-col h-full shadow-xl">
-      <div className="p-6 border-b border-gray-800">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
-          CC Admin
-        </h2>
+    <div className="w-56 bg-gray-900 min-h-screen flex flex-col border-r border-gray-800 shrink-0">
+      <div className="px-5 py-5 border-b border-gray-800">
+        <p className="text-white font-bold text-base">Campus Connect</p>
+        <p className="text-gray-400 text-xs mt-0.5">Admin Panel</p>
       </div>
 
-      <nav className="flex-1 py-6 px-4 space-y-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
+      <nav className="flex-1 px-3 py-4 space-y-1">
+        {navItems.map(({ to, label, icon }) => (
+          <NavLink key={to} to={to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive 
-                  ? 'bg-primary-600 text-white' 
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-              }`
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`
             }
           >
-            <item.icon size={20} />
-            <span className="font-medium">{item.name}</span>
+            <span>{icon}</span>
+            <span>{label}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-800">
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-gray-400 hover:bg-gray-800 hover:text-red-400 transition-colors"
-        >
-          <LogOut size={20} />
-          <span className="font-medium">Logout</span>
+      <div className="px-3 py-4 border-t border-gray-800">
+        <button onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-red-400 transition">
+          <span>🚪</span>
+          <span>Logout</span>
         </button>
       </div>
     </div>
   );
-};
-
-export default AdminSidebar;
+}
