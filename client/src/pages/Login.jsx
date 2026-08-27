@@ -4,63 +4,64 @@ import { toast } from 'react-hot-toast';
 import { loginUser } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
-const Login = () => {
+export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [formData, setFormData] = useState({ phone: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ phone: '', password: '' });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const submit = async e => {
     e.preventDefault();
+    setLoading(true);
     try {
-      const res = await loginUser(formData);
+      const res = await loginUser(form);
       login(res.data.token, res.data.user);
-      toast.success('Logged in successfully!');
+      toast.success('Welcome back!');
       navigate('/dashboard');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
-    }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Login failed');
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-              <div className="mt-1">
-                <input name="phone" type="tel" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" value={formData.phone} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <div className="mt-1">
-                <input name="password" type="password" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" value={formData.password} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div>
-              <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                Sign in
-              </button>
-            </div>
-          </form>
-          <div className="mt-6 text-center">
-             <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">Don't have an account? Register</Link>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-10 px-4">
+      <div className="max-w-md mx-auto w-full">
+        <div className="text-center mb-8">
+          <Link to="/" className="text-purple-700 font-bold text-xl">Campus Connect 💜</Link>
+          <h2 className="text-2xl font-bold text-gray-900 mt-3">Welcome back</h2>
+          <p className="text-gray-500 text-sm mt-1">Login to see your weekly match</p>
         </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <form onSubmit={submit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <input name="phone" type="tel" required value={form.phone} onChange={handle}
+                placeholder="Enter your phone number"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input name="password" type="password" required value={form.password} onChange={handle}
+                placeholder="Your password"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+            </div>
+
+            <button type="submit" disabled={loading}
+              className="w-full bg-purple-700 text-white font-semibold py-3 rounded-xl hover:bg-purple-800 transition disabled:opacity-60">
+              {loading ? 'Logging in...' : 'See my match →'}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-gray-500 mt-5">
+          New here?{' '}
+          <Link to="/register" className="text-purple-700 font-medium hover:underline">Create an account</Link>
+        </p>
       </div>
     </div>
   );
-};
-
-export default Login;
+}
