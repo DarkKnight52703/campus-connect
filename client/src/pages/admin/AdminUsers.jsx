@@ -1,95 +1,79 @@
 import React, { useEffect, useState } from 'react';
 import AdminSidebar from '../../components/AdminSidebar';
 import { getUsers } from '../../api';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import { Search } from 'lucide-react';
 
-const AdminUsers = () => {
+export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await getUsers();
-        setUsers(res.data);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUsers();
+    getUsers().then(r => setUsers(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.phone.includes(searchTerm)
+  const filtered = users.filter(u =>
+    u.name.toLowerCase().includes(search.toLowerCase()) ||
+    u.phone.includes(search)
   );
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h1 className="text-2xl font-bold text-gray-800">Users ({users.length})</h1>
-            <div className="relative w-full md:w-64">
-              <input
-                type="text"
-                placeholder="Search name or phone..."
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+      <main className="flex-1 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+              <p className="text-gray-500 text-sm mt-1">{users.length} registered</p>
             </div>
+            <input
+              type="text" placeholder="Search name or phone..."
+              value={search} onChange={e => setSearch(e.target.value)}
+              className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
           </div>
 
           {loading ? (
-            <LoadingSpinner />
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+            </div>
+          ) : !filtered.length ? (
+            <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center text-gray-400 shadow-sm">
+              <div className="text-4xl mb-2">👥</div>
+              <p>{search ? 'No users match your search.' : 'No users registered yet.'}</p>
+            </div>
           ) : (
-            <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instagram</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phone}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.instagram || '—'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.gender === 'male' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}`}>
-                            {user.gender === 'male' ? '👦 Male' : '👧 Female'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(user.created_at).toLocaleDateString('en-IN')}</td>
-                      </tr>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    {['Name', 'Phone', 'Instagram', 'Gender', 'Joined'].map(h => (
+                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                     ))}
-                    {filteredUsers.length === 0 && (
-                        <tr>
-                            <td colSpan="5" className="px-6 py-4 text-center text-gray-500">No users found.</td>
-                        </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filtered.map(u => (
+                    <tr key={u.id} className="hover:bg-gray-50 transition">
+                      <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{u.name}</td>
+                      <td className="px-5 py-3.5 text-sm text-gray-500">{u.phone}</td>
+                      <td className="px-5 py-3.5 text-sm text-gray-400">{u.instagram || '—'}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${u.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
+                          {u.gender === 'male' ? '👦 Male' : '👧 Female'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-gray-400">
+                        {new Date(u.created_at).toLocaleDateString('en-IN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
-};
-
-export default AdminUsers;
+}
