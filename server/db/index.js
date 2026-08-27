@@ -3,11 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
+// Strip channel_binding param — not supported by node-postgres
+const cleanDbUrl = (process.env.DATABASE_URL || '')
+  .replace(/[&?]channel_binding=[^&]*/g, '')
+  .replace(/\?&/, '?');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  connectionString: cleanDbUrl,
+  ssl: { rejectUnauthorized: false }
 });
 
 const initDB = async () => {
