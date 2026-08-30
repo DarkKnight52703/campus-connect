@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminSidebar from '../../components/AdminSidebar';
-import { getAdminStats } from '../../api';
+import { getAdminStats, getAdminHistory } from '../../api';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const fetchStats = async () => {
     setLoading(true); setError(false);
@@ -18,7 +21,22 @@ export default function AdminDashboard() {
     } finally { setLoading(false); }
   };
 
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const r = await getAdminHistory();
+      setHistory(r.data);
+    } catch {
+      // fail silently
+    } finally { setHistoryLoading(false); }
+  };
+
   useEffect(() => { fetchStats(); }, []);
+
+  const toggleHistory = () => {
+    if (!historyOpen && history.length === 0) fetchHistory();
+    setHistoryOpen(h => !h);
+  };
 
   const cards = [
     { label: 'Total Users', value: stats?.totalUsers ?? '—', icon: '👥', color: 'bg-blue-50 text-blue-700' },
@@ -56,7 +74,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Recent Events */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <h2 className="font-semibold text-gray-800">Recent Events</h2>
               <Link to="/admin/events" className="text-sm text-purple-600 hover:underline">View all →</Link>
@@ -90,6 +108,71 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+
+          {/* Past Events History */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <button
+              onClick={toggleHistory}
+              className="w-full px-6 py-4 flex justify-between items-center text-left hover:bg-gray-50 rounded-2xl transition"
+            >
+              <div>
+                <h2 className="font-semibold text-gray-800">🕐 Past Events History</h2>
+                <p className="text-gray-400 text-xs mt-0.5">All revealed events with match summaries</p>
+              </div>
+              <span
+                className="text-gray-400 text-sm transition-transform"
+                style={{ display: 'inline-block', transform: historyOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >▾</span>
+            </button>
+
+            {historyOpen && (
+              <div className="border-t border-gray-100">
+                {historyLoading ? (
+                  <div className="flex justify-center py-10">
+                    <div className="w-7 h-7 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="py-12 text-center text-gray-400">
+                    <div className="text-4xl mb-2">📭</div>
+                    <p className="text-sm">No past revealed events yet.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {history.map(ev => (
+                      <Link
+                        key={ev.id}
+                        to={`/admin/events/${ev.id}`}
+                        className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-lg shrink-0">✅</div>
+                          <div>
+                            <p className="font-medium text-gray-800 text-sm">{ev.name}</p>
+                            <p className="text-gray-400 text-xs mt-0.5">
+                              {new Date(ev.event_date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                              {' · '}{ev.event_time?.slice(0, 5)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-right shrink-0">
+                          <div className="text-xs text-gray-500 space-y-0.5">
+                            <p><span className="font-semibold text-gray-800">{ev.participant_count}</span> participants</p>
+                            <p><span className="font-semibold text-gray-800">{ev.match_count}</span> pairs
+                              {parseInt(ev.special_pair_count) > 0 && (
+                                <span className="ml-1 text-yellow-600">⭐ {ev.special_pair_count} special</span>
+                              )}
+                            </p>
+                          </div>
+                          <span className="text-purple-500 text-sm">→</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
         </div>
       </main>
     </div>
