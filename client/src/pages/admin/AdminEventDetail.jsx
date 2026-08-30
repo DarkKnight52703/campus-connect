@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import AdminSidebar from '../../components/AdminSidebar';
-import { getEvent, setSpecialPair, shuffleEvent, revealEvent } from '../../api';
+import { getEvent, setSpecialPair, shuffleEvent, revealEvent, getEventMatches } from '../../api';
 
 export default function AdminEventDetail() {
   const { id } = useParams();
@@ -32,6 +32,37 @@ export default function AdminEventDetail() {
     try { await fn(); toast.success(`${label} done!`); await load(); }
     catch (err) { toast.error(err.response?.data?.message || `${label} failed`); }
     finally { setActing(''); }
+  };
+
+  const exportMatchesCSV = async () => {
+    try {
+      const r = await getEventMatches(id);
+      const rows = r.data;
+      if (!rows.length) return toast.error('No matches to export');
+      const headers = ['Male Name', 'Male Phone', 'Male Instagram', 'Female Name', 'Female Phone', 'Female Instagram', 'Special Pair'];
+      const lines = [
+        headers.join(','),
+        ...rows.map(m => [
+          `"${m.male_name || ''}"`,
+          `"${m.male_phone || ''}"`,
+          `"${m.male_instagram || ''}"`,
+          `"${m.female_name || ''}"`,
+          `"${m.female_phone || ''}"`,
+          `"${m.female_instagram || ''}"`,
+          m.is_special_pair ? 'Yes' : 'No',
+        ].join(','))
+      ];
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `matches-${event?.name?.replace(/\s+/g, '-') || id}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('CSV downloaded!');
+    } catch {
+      toast.error('Failed to export CSV');
+    }
   };
 
   const handleSpecialPair = () => {
@@ -84,9 +115,19 @@ export default function AdminEventDetail() {
                 }
               </p>
             </div>
-            <span className={`text-sm font-semibold px-4 py-1.5 rounded-full ${statusStyle[event.status] || 'bg-gray-100 text-gray-600'}`}>
-              {event.status?.toUpperCase()}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className={`text-sm font-semibold px-4 py-1.5 rounded-full ${statusStyle[event.status] || 'bg-gray-100 text-gray-600'}`}>
+                {event.status?.toUpperCase()}
+              </span>
+              {event.status !== 'pending' && (
+                <button
+                  onClick={exportMatchesCSV}
+                  className="flex items-center gap-2 text-sm font-medium px-4 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+                >
+                  ⬇ Export CSV
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Stats Row */}
