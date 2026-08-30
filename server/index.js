@@ -7,6 +7,7 @@ const { startScheduler } = require('./cron/scheduler');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const adminRoutes = require('./routes/admin');
+const pingRoute = require('./routes/ping');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/ping', pingRoute);
 
 // Health check
 app.get('/', (req, res) => {
