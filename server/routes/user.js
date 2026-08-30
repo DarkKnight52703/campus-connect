@@ -87,4 +87,52 @@ router.get('/my-match', auth, async (req, res) => {
   }
 });
 
+// GET /my-history
+router.get('/my-history', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get all events the user participated in (revealed only, ordered newest first)
+    const eventsQuery = await pool.query(
+      `SELECT e.id, e.name, e.event_date, e.event_time, e.status
+       FROM events e
+       JOIN event_participants ep ON e.id = ep.event_id
+       WHERE ep.user_id = $1 AND e.status = 'revealed'
+       ORDER BY e.event_date DESC`,
+      [userId]
+    );
+
+    const history = await Promise.all(eventsQuery.rows.map(async (event) => {
+      const matchQuery = await pool.query(
+        `SELECT * FROM matches WHERE event_id = $1 AND (male_user_id = $2 OR female_user_id = $2)`,
+        [event.id, userId]
+      );
+
+      if (matchQuery.rows.length === 0) {
+        return { event, matched: false, unmatched: true };
+      }
+
+      const match = matchQuery.rows[0];
+      const partnerId = match.male_user_id === userId ? match.female_user_id : match.male_user_id;
+
+      const partnerQuery = await pool.query(
+        'SELECT name, phone, instagram FROM users WHERE id = $1',
+        [partnerId]
+      );
+
+      return {
+        event,
+        matched: true,
+        isSpecialPair: match.is_special_pair,
+        partner: partnerQuery.rows[0],
+      };
+    }));
+
+    res.json(history);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
