@@ -71,6 +71,26 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// GET /history — all revealed events with match/participant counts
+router.get('/history', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        e.id, e.name, e.event_date, e.event_time, e.status,
+        (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) AS participant_count,
+        (SELECT COUNT(*) FROM matches WHERE event_id = e.id) AS match_count,
+        (SELECT COUNT(*) FROM matches WHERE event_id = e.id AND is_special_pair = true) AS special_pair_count
+      FROM events e
+      WHERE e.status = 'revealed'
+      ORDER BY e.event_date DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET /events
 router.get('/events', async (req, res) => {
   try {
