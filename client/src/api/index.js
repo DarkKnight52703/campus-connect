@@ -26,10 +26,12 @@ export const registerUser = (data) => api.post('/api/auth/register', data);
 export const loginUser = (data) => api.post('/api/auth/login', data);
 export const getUserProfile = () => api.get('/api/user/profile');
 export const getMyMatch = () => api.get('/api/user/my-match');
+export const getMyHistory = () => api.get('/api/user/my-history');
 
 // Admin API
 export const adminLogin = (data) => adminApi.post('/api/admin/login', data);
 export const getAdminStats = () => adminApi.get('/api/admin/stats');
+export const getAdminHistory = () => adminApi.get('/api/admin/history');
 export const getUsers = () => adminApi.get('/api/admin/users');
 export const getEvents = () => adminApi.get('/api/admin/events');
 export const createEvent = (data) => adminApi.post('/api/admin/events', data);
