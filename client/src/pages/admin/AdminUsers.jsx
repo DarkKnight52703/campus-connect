@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AdminSidebar from '../../components/AdminSidebar';
+import { toast } from 'react-hot-toast';
 import { getUsers } from '../../api';
 
 export default function AdminUsers() {
@@ -16,6 +17,29 @@ export default function AdminUsers() {
     u.phone.includes(search)
   );
 
+  const exportUsersCSV = () => {
+    if (!users.length) return toast.error('No users to export');
+    const headers = ['Name', 'Phone', 'Instagram', 'Gender', 'Joined'];
+    const lines = [
+      headers.join(','),
+      ...users.map(u => [
+        `"${u.name}"`,
+        `"${u.phone}"`,
+        `"${u.instagram || ''}"`,
+        u.gender,
+        new Date(u.created_at).toLocaleDateString('en-IN'),
+      ].join(','))
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'campus-connect-users.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Users CSV downloaded!');
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
@@ -26,11 +50,21 @@ export default function AdminUsers() {
               <h1 className="text-2xl font-bold text-gray-900">Users</h1>
               <p className="text-gray-500 text-sm mt-1">{users.length} registered</p>
             </div>
-            <input
-              type="text" placeholder="Search name or phone..."
-              value={search} onChange={e => setSearch(e.target.value)}
-              className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+            <div className="flex items-center gap-3">
+              {users.length > 0 && (
+                <button
+                  onClick={exportUsersCSV}
+                  className="flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+                >
+                  ⬇ Export CSV
+                </button>
+              )}
+              <input
+                type="text" placeholder="Search name or phone..."
+                value={search} onChange={e => setSearch(e.target.value)}
+                className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
           </div>
 
           {loading ? (
