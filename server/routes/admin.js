@@ -153,10 +153,19 @@ router.get('/events/:id', async (req, res) => {
       WHERE ep.event_id = $1
     `, [eventId]);
 
-    const matches = await pool.query('SELECT * FROM matches WHERE event_id = $1', [eventId]);
+    const matches = await pool.query(`
+      SELECT m.id, m.event_id, m.male_user_id, m.female_user_id, m.is_special_pair, m.created_at,
+             mu.name as male_name, mu.phone as male_phone, mu.instagram as male_instagram,
+             fu.name as female_name, fu.phone as female_phone, fu.instagram as female_instagram
+      FROM matches m
+      LEFT JOIN users mu ON m.male_user_id = mu.id
+      LEFT JOIN users fu ON m.female_user_id = fu.id
+      WHERE m.event_id = $1
+      ORDER BY m.is_special_pair DESC, m.created_at ASC
+    `, [eventId]);
 
     res.json({
-      event: event.rows[0],
+      ...event.rows[0],
       participants: participants.rows,
       matches: matches.rows
     });
